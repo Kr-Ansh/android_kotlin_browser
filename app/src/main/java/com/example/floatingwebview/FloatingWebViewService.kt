@@ -32,7 +32,6 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.example.floatingwebview.databinding.FloatingWebViewLayoutBinding
 import com.example.floatingwebview.home.AppDatabase
 import com.example.floatingwebview.home.VisitedPage
 import com.example.floatingwebview.home.VisitedPageDao
@@ -155,6 +154,7 @@ class FloatingWebViewService : Service() {
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val rootView = inflater.inflate(R.layout.floating_web_view_layout, null)
 
+        val mainLayout = rootView.findViewById<LinearLayout>(R.id.mainLayout)
         val webView = rootView.findViewById<WebView>(R.id.webView)
         val homeButton = rootView.findViewById<ImageButton>(R.id.homeButton)
         val closeButton = rootView.findViewById<ImageButton>(R.id.closeButton)
@@ -163,7 +163,8 @@ class FloatingWebViewService : Service() {
         val resizeHandle = rootView.findViewById<ImageView>(R.id.resizeHandle)
         val jsToggle = rootView.findViewById<LinearLayout>(R.id.jsToggle)
         val jsStatusIcon = rootView.findViewById<View>(R.id.jsStatusIcon)
-        val maximizeButton = rootView.findViewById<ImageButton>(R.id.maximizeButton)
+        val minimizeButton = rootView.findViewById<ImageButton>(R.id.minimizeButton)
+        val minimizedIcon = rootView.findViewById<ImageView>(R.id.minimizedIcon)
 
         val displayMetrics = resources.displayMetrics
         val (width, height) = when (size) {
@@ -185,6 +186,9 @@ class FloatingWebViewService : Service() {
             y = 100 + (nextWindowId * 30)
         }
 
+        rootView.setTag(R.id.tag_original_width, width)
+        rootView.setTag(R.id.tag_original_height, height)
+
         setupWebView(webView, url, rootView, params, windowManager, this)
         setupHomeButton(homeButton, webView, this, windowId, windowManager)
         setupCloseButton(closeButton, windowId)
@@ -192,7 +196,9 @@ class FloatingWebViewService : Service() {
         setupMoreOptionsButton(moreOptionsButton, webView)
         setupResizeListener(resizeHandle, rootView, params)
         setupJsToggle(jsToggle, jsStatusIcon, webView)
-        setupMaximizeButton(maximizeButton, rootView, params)
+        setupMinimizeButton(minimizeButton, mainLayout, minimizedIcon, params, rootView)
+        setupMinimizedIconDragListener(minimizedIcon, params, rootView, windowId)
+
         jsStatusIcon.setBackgroundResource(if (isJavaScriptEnabled) R.drawable.circle_green else R.drawable.circle_red)
 
         try {
@@ -667,43 +673,73 @@ class FloatingWebViewService : Service() {
         }
     }
 
-    private fun setupMaximizeButton(maximizeButton: ImageButton, rootView: View, params: WindowManager.LayoutParams) {
-        var isMaximized = false
-        var originalWidth = params.width
-        var originalHeight = params.height
-        var originalX = params.x
-        var originalY = params.y
+    private fun setupMinimizeButton(
+        minimizeButton: ImageButton,
+        mainLayout: View,
+        minimizedIcon: View,
+        params: WindowManager.LayoutParams,
+        rootView: View
+    ) {
+        minimizeButton.setOnClickListener {
+            mainLayout.visibility = View.GONE
+            minimizedIcon.visibility = View.VISIBLE
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            windowManager.updateViewLayout(rootView, params)
+        }
 
-        maximizeButton.setOnClickListener {
-            val displayMetrics = resources.displayMetrics
-            if (!isMaximized) {
-                // Store original dimensions and position
-                originalWidth = params.width
-                originalHeight = params.height
-                originalX = params.x
-                originalY = params.y
-
-                // Maximize to full screen
-                params.x = 0
-                params.y = 0
-                params.width = displayMetrics.widthPixels
-                params.height = displayMetrics.heightPixels
-                windowManager.updateViewLayout(rootView, params)
-
-                maximizeButton.setImageResource(android.R.drawable.ic_menu_revert) // Change to a 'minimize' icon
-                isMaximized = true
-            } else {
-                // Restore to original dimensions and position
-                params.width = originalWidth
-                params.height = originalHeight
-                params.x = originalX
-                params.y = originalY
-                windowManager.updateViewLayout(rootView, params)
-                maximizeButton.setImageResource(android.R.drawable.ic_menu_zoom) // Change back to 'maximize' icon
-                isMaximized = false
-            }
+        minimizedIcon.setOnClickListener {
+            mainLayout.visibility = View.VISIBLE
+            minimizedIcon.visibility = View.GONE
+            params.width = rootView.getTag(R.id.tag_original_width) as Int
+            params.height = rootView.getTag(R.id.tag_original_height) as Int
+            windowManager.updateViewLayout(rootView, params)
         }
     }
+
+    private fun setupMinimizedIconDragListener(minimizedIcon: View, params: WindowManager.LayoutParams, rootView: View, windowId: Int) {
+        minimizedIcon.setOnTouchListener(object : View.OnTouchListener {
+            private var initialX = 0
+            private var initialY = 0
+            private var initialTouchX = 0f
+            private var initialTouchY = 0f
+            private var isDragging = false
+
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialX = params.x
+                        initialY = params.y
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        isDragging = false
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val dx = event.rawX - initialTouchX
+                        val dy = event.rawY - initialTouchY
+                        if (dx > 10 || dy > 10) { // Start dragging only after a small movement
+                            isDragging = true
+                        }
+                        if(isDragging) {
+                            params.x = (initialX + dx).toInt()
+                            params.y = (initialY + dy).toInt()
+                            windowManager.updateViewLayout(rootView, params)
+                        }
+                        return true
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        if (!isDragging) {
+                            v.performClick()
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+    }
+
 
     private fun removeWindow(windowId: Int) {
         try {
