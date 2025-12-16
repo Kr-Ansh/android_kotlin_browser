@@ -153,8 +153,17 @@ class FloatingWebViewService : Service() {
         count++
         val windowId = nextWindowId++
         val inflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val binding = FloatingWebViewLayoutBinding.inflate(inflater)
-        val rootView = binding.root
+        val rootView = inflater.inflate(R.layout.floating_web_view_layout, null)
+
+        val webView = rootView.findViewById<WebView>(R.id.webView)
+        val homeButton = rootView.findViewById<ImageButton>(R.id.homeButton)
+        val closeButton = rootView.findViewById<ImageButton>(R.id.closeButton)
+        val headerView = rootView.findViewById<View>(R.id.headerView)
+        val moreOptionsButton = rootView.findViewById<ImageButton>(R.id.moreOptionsButton)
+        val resizeHandle = rootView.findViewById<ImageView>(R.id.resizeHandle)
+        val jsToggle = rootView.findViewById<LinearLayout>(R.id.jsToggle)
+        val jsStatusIcon = rootView.findViewById<View>(R.id.jsStatusIcon)
+        val maximizeButton = rootView.findViewById<ImageButton>(R.id.maximizeButton)
 
         val displayMetrics = resources.displayMetrics
         val (width, height) = when (size) {
@@ -176,25 +185,26 @@ class FloatingWebViewService : Service() {
             y = 100 + (nextWindowId * 30)
         }
 
-        setupWebView(binding.webView, url, rootView, params, windowManager, this)
-        setupHomeButton(binding.homeButton, binding.webView, this, windowId, windowManager)
-        setupCloseButton(binding.closeButton, windowId)
-        setupDragListener(binding.headerView, windowId)
-        setupMoreOptionsButton(binding.moreOptionsButton, binding.webView)
-        setupResizeListener(binding.resizeHandle, rootView, params)
-        setupJsToggle(binding.jsToggle, binding.jsStatusIcon, binding.webView)
-        binding.jsStatusIcon.setBackgroundResource(if (isJavaScriptEnabled) R.drawable.circle_green else R.drawable.circle_red)
+        setupWebView(webView, url, rootView, params, windowManager, this)
+        setupHomeButton(homeButton, webView, this, windowId, windowManager)
+        setupCloseButton(closeButton, windowId)
+        setupDragListener(headerView, windowId)
+        setupMoreOptionsButton(moreOptionsButton, webView)
+        setupResizeListener(resizeHandle, rootView, params)
+        setupJsToggle(jsToggle, jsStatusIcon, webView)
+        setupMaximizeButton(maximizeButton, rootView, params)
+        jsStatusIcon.setBackgroundResource(if (isJavaScriptEnabled) R.drawable.circle_green else R.drawable.circle_red)
 
         try {
             windowManager.addView(rootView, params)
-            binding.webView.requestFocus()
-            binding.webView.isFocusable = true
-            binding.webView.isFocusableInTouchMode = true
-            binding.webView.isLongClickable = true
-            binding.webView.isHapticFeedbackEnabled = true
+            webView.requestFocus()
+            webView.isFocusable = true
+            webView.isFocusableInTouchMode = true
+            webView.isLongClickable = true
+            webView.isHapticFeedbackEnabled = true
             activeWindows[windowId] = Pair(rootView, params)
         } catch (e: Exception) {
-            binding.webView.destroy()
+            webView.destroy()
         }
     }
 
@@ -654,6 +664,44 @@ class FloatingWebViewService : Service() {
             webView.reload()
             jsStatusIndicator.setBackgroundResource(if (isJavaScriptEnabled) R.drawable.circle_green else R.drawable.circle_red)
             Toast.makeText(this, "JavaScript ${if (isJavaScriptEnabled) "Enabled" else "Disabled"}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupMaximizeButton(maximizeButton: ImageButton, rootView: View, params: WindowManager.LayoutParams) {
+        var isMaximized = false
+        var originalWidth = params.width
+        var originalHeight = params.height
+        var originalX = params.x
+        var originalY = params.y
+
+        maximizeButton.setOnClickListener {
+            val displayMetrics = resources.displayMetrics
+            if (!isMaximized) {
+                // Store original dimensions and position
+                originalWidth = params.width
+                originalHeight = params.height
+                originalX = params.x
+                originalY = params.y
+
+                // Maximize to full screen
+                params.x = 0
+                params.y = 0
+                params.width = displayMetrics.widthPixels
+                params.height = displayMetrics.heightPixels
+                windowManager.updateViewLayout(rootView, params)
+
+                maximizeButton.setImageResource(android.R.drawable.ic_menu_revert) // Change to a 'minimize' icon
+                isMaximized = true
+            } else {
+                // Restore to original dimensions and position
+                params.width = originalWidth
+                params.height = originalHeight
+                params.x = originalX
+                params.y = originalY
+                windowManager.updateViewLayout(rootView, params)
+                maximizeButton.setImageResource(android.R.drawable.ic_menu_zoom) // Change back to 'maximize' icon
+                isMaximized = false
+            }
         }
     }
 

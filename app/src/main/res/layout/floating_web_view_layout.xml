@@ -32,10 +32,21 @@
                 android:contentDescription="@string/more_options" />
 
             <ImageButton
+                android:id="@+id/maximizeButton"
+                android:layout_width="48dp"
+                android:layout_height="64dp"
+                android:layout_toEndOf="@id/moreOptionsButton"
+                android:layout_centerVertical="true"
+                android:background="?android:selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_zoom"
+                app:tint="@android:color/white"
+                android:contentDescription="@string/maximize" />
+
+            <ImageButton
                 android:id="@+id/homeButton"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:layout_toEndOf="@id/moreOptionsButton"
+                android:layout_toEndOf="@id/maximizeButton"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
                 android:background="?android:selectableItemBackgroundBorderless"
