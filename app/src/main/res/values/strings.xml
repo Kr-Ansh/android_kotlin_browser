@@ -28,5 +28,6 @@
     <string name="menu_copy_selected_text">Copy Selected Text</string>
     <string name="menu_paste">Paste</string>
     <string name="menu_copy_all">Copy All</string>
+    <string name="minimize">Minimize</string>
 
 </resources>

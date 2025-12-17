@@ -7,6 +7,7 @@
     android:background="@android:color/white">
 
     <LinearLayout
+        android:id="@+id/mainLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -32,10 +33,21 @@
                 android:contentDescription="@string/more_options" />
 
             <ImageButton
+                android:id="@+id/minimizeButton"
+                android:layout_width="48dp"
+                android:layout_height="64dp"
+                android:layout_toEndOf="@id/moreOptionsButton"
+                android:layout_centerVertical="true"
+                android:background="?android:selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="@android:color/white"
+                android:contentDescription="@string/minimize" />
+
+            <ImageButton
                 android:id="@+id/homeButton"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:layout_toEndOf="@id/moreOptionsButton"
+                android:layout_toEndOf="@id/minimizeButton"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
                 android:background="?android:selectableItemBackgroundBorderless"
@@ -112,5 +124,13 @@
         android:background="?android:selectableItemBackgroundBorderless"
         android:contentDescription="@string/resize"
         android:alpha="0.5" />
+
+    <ImageView
+        android:id="@+id/minimizedIcon"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="top|start"
+        android:src="@drawable/applogo"
+        android:visibility="gone" />
 
 </FrameLayout>
