@@ -40,6 +40,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 
 class Simpleweb : AppCompatActivity() {
 
@@ -85,9 +87,24 @@ class Simpleweb : AppCompatActivity() {
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView,true)
         webView.webChromeClient = android.webkit.WebChromeClient()
+
+        // Enable WebAuthn/Passkey support
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
+            WebSettingsCompat.setWebAuthenticationSupport(
+                webView.settings,
+                WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP
+            )
+        }
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 if (url != null) {
+                    // Detect login/auth pages and open in Chrome Custom Tabs for passkey support
+                    if (isLoginPage(url)) {
+                        ChromeCustomTabHelper.openUrl(this@Simpleweb, url)
+                        return true
+                    }
+                    
                     if (url.startsWith("http://") || url.startsWith("https://")) {
                         return false // Let the WebView handle HTTP/HTTPS URLs
                     }
@@ -317,6 +334,30 @@ class Simpleweb : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         CookieManager.getInstance().flush()
+    }
+
+    /**
+     * Detects if a URL is a login/authentication page that should be opened
+     * in Chrome Custom Tabs for passkey support
+     */
+    private fun isLoginPage(url: String): Boolean {
+        val loginPatterns = listOf(
+            "/login",
+            "/signin",
+            "/sign-in",
+            "/sign_in",
+            "/authenticate",
+            "/auth/",
+            "/oauth",
+            "/sso/",
+            "/accounts/login",
+            "/session/new",
+            "login.php",
+            "signin.php",
+            "passkey=true"
+        )
+        val lowerUrl = url.lowercase()
+        return loginPatterns.any { lowerUrl.contains(it) }
     }
 
 }
