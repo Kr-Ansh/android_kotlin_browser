@@ -29,5 +29,6 @@
     <string name="menu_paste">Paste</string>
     <string name="menu_copy_all">Copy All</string>
     <string name="minimize">Minimize</string>
+    <string name="menu_open_in_chrome">Open in Chrome (Passkey)</string>
 
 </resources>
