@@ -97,16 +97,6 @@ class FloatingWebViewService : Service() {
             }
         }
 
-        @JavascriptInterface
-        fun onTextSelected(text: String?) {
-            if (text.isNullOrBlank()) return
-            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("Copied Text", text))
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(applicationContext, "Copied: ${text.take(200)}", Toast.LENGTH_SHORT).show()
-            }
-            Log.d("FWV", "SelectionBridge.onTextSelected -> ${text.take(200)}")
-        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -296,21 +286,6 @@ class FloatingWebViewService : Service() {
                     cancelSelectionPopup()
                 }
             }
-            false
-        }
-
-        // Handle long clicks - IMPORTANT: return false to allow WebView selection
-        webView.setOnLongClickListener {
-            lastTouchedRootView = rootView
-            lastTouchedWebView = webView
-
-            if ((params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) != 0) {
-                params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-                try { windowManager.updateViewLayout(rootView, params) } catch (_: Exception) {}
-            }
-            webView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-
-            // Return false to allow WebView's native selection to work
             false
         }
 
