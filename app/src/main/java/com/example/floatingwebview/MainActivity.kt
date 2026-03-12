@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         // Observe recent visited pages
         lifecycleScope.launch {
             viewModel.recentPages5.collectLatest { list ->
-                adapter.submitList(list.reversed())
+                adapter.submitList(list)
             }
         }
 
